@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Display a popup on click</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
+<style>
+body { margin: 0; padding: 0; height:100%}
+</style>
+</head>
+<body>
+
+<style>
+    .mapboxgl-popup {
+        max-width: 400px;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    }
+    #popup{
+        width:50%;
+        position: absolute; top: 0; bottom: 0;        
+        left:50%;
+        z-index:1;
+        border:1px solid black;
+    }
+    #map{
+        z-index:-1;
+        position: absolute; top: 0; bottom: 0;        
+width:50%;
+    }
+</style>
+<div id="map"></div>
+<div id="popup"></div>
+<script>
+
+    //TODO:
+    //1. make a map style of incarcerated population in mapbox
+    //2. make a satellite map style in mapbox
+    //3. add your access token, and the 2 map styles
+    //4. add center coordinates, and zoom
+    //5. fill map popups with data
+    //6. set new map center for popup map on click
+    //7. test
+	mapboxgl.accessToken = 'pk.eyJ1IjoiendvYyIsImEiOiJjbHNnaWFxMngxdWRmMmpvMjgyMDZnMnF1In0.OMPbQOfOY5q8ttSPaoUw_w';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/zwoc/clsgoqlvn03hd01qqbglvd09i',
+        center: [-98, 40],
+        zoom: 3
+    });
+
+    const popupMap = new mapboxgl.Map({
+        container: 'popup',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/zwoc/clsgpa4q003ic01p2971y6fbh',
+        center: [-98, 40],
+        zoom: 20
+    });
+
+
+    map.on('load', () => {
+   
+        //line below console logs out the layers in your current map
+        //console.log(map.getStyle().layers)
+
+        // When a click event occurs on a feature in the places layer, open a popup at the
+        // location of the feature, with description HTML from its properties.
+        map.on('click', 'test', (e) => {
+            // this is the feature that was clicked on
+            const clickedOnFeature = e.features[0]
+            //using keys to access feature object
+            //for example:
+      
+            //console.log out properties to see what is available as popup text.
+            const coordinates = e.features[0].geometry.coordinates.slice();
+            const name = e.features[0].properties.NAME;
+            const population = e.features[0].properties.POPULATION;
+            const capacity = e.features[0].properties.CAPACITY;
+            const securityLevel = e.features[0].properties.SECURELVL;
+            console.log(coordinates)
+
+            popupMap.setCenter(coordinates)
+
+            //set the popupMap using .setCenter(coordinates to center on)            
+
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+
+            //populate the popup
+            new mapboxgl.Popup()
+                .setLngLat(coordinates)
+                .setHTML("Facility: "+name+"<br>Capacity: "+capacity+"<br>Population: "+population+"<br>Security Level: "+securityLevel)
+                .addTo(map);
+        });
+
+        // Change the cursor to a pointer when the mouse is over the places layer.
+        map.on('mouseenter', 'test', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+        // Change it back to a pointer when it leaves.
+        map.on('mouseleave', 'test', () => {
+            map.getCanvas().style.cursor = '';
+        });
+    });
+</script>
+
+</body>
+</html>
