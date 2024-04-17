@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Animate a Line by Year</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #timeline {
+            position: absolute;
+            bottom: 30px;
+            left: 10%;
+            transform: translateX(-10%);
+            height: 80%;
+            width: 30px;
+            background-color: #cfcfcf9a;
+            z-index: 100;
+        }
+
+        .year-marker {
+            position: relative;
+            width: 30px;
+            height: 1px;
+            background-color: #116298;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
+        #year-display {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #1327bdcd;
+            font-size: 30px;
+            font-family: 'Arial', sans-serif;
+            z-index: 100;
+        }
+
+        .mapboxgl-popup {
+            opacity: 0;
+            transition: opacity 100ms ease-in-out;
+        }
+
+        .mapboxgl-popup-content {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+            border-top-color: rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="timeline"></div>
+<div id="year-display">1830</div> <!-- Initial year displayed -->
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiendvYyIsImEiOiJjbHU3c24wZXIwM21hMmpwNnhmMTJkOTZvIn0.RW_k2Lezha_QbHUHQQ-ZBg';
+    const startYear = 1830;
+    const endYear = 1920;
+    const currentYear = { value: startYear };
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/zwoc/clv2lujq701p801pk3z4ihbml',
+        center: [-98, 40],
+        zoom: 4,
+        scrollZoom: false
+    });
+
+    function animateLineWidth(targetWidth) {
+        let currentWidth = 0;
+        function frame() {
+            currentWidth += (targetWidth - currentWidth) * 0.1;
+            map.setPaintProperty('railway-data', 'line-width', currentWidth);
+
+            if (Math.abs(currentWidth - targetWidth) > 0.05) {
+                requestAnimationFrame(frame);
+            } else {
+                map.setPaintProperty('railway-data', 'line-width', targetWidth); // Ensure it ends exactly at target width
+            }
+        }
+        frame();
+    }
+
+    map.on('load', function() {
+        setupTimeline();
+        updateYearDisplay(currentYear.value);
+
+        map.addSource('railways', {
+            type: 'vector',
+            url: 'mapbox://yourusername.yourdata'
+        });
+
+        map.addLayer({
+            'id': 'railway-data',
+            'type': 'line',
+            'source': 'railways',
+            'source-layer': 'your-layer-name',
+            'layout': {
+                'line-cap': 'round',
+                'line-join': 'round'
+            },
+            'paint': {
+                'line-color': '#888',
+                'line-width': 1 // Start with an animated width
+            }
+        });
+
+        animateLineWidth(2); // Trigger the animation when the layer is added
+
+        window.addEventListener("wheel", function(e) {
+            e.preventDefault();
+            if (e.deltaY < 0 && currentYear.value > startYear) {
+                currentYear.value--;
+            } else if (e.deltaY > 0 && currentYear.value < endYear) {
+                currentYear.value++;
+            }
+            updateYearOnMap();
+            highlightCurrentYear();
+            updateYearDisplay(currentYear.value);
+        });
+
+        map.on('click', 'railway-data', function(e) {
+            const coordinates = e.features[0].geometry.coordinates.slice();
+            const description = `<strong>Railway Name:</strong> ${e.features[0].properties.RRname}`;
+            const popup = new mapboxgl.Popup({ className: 'RRname' })
+                .setLngLat(coordinates[0])
+                .setHTML(description)
+                .addTo(map);
+
+            // Delay opacity to trigger transition
+            setTimeout(() => { popup.getElement().style.opacity = 1; }, 10);
+        });
+    });
+
+    function setupTimeline() {
+        const timeline = document.getElementById('timeline');
+        for (let year = startYear; year <= endYear; year++) {
+            const marker = document.createElement('div');
+            marker.className = 'year-marker';
+            marker.id = 'year-' + year;
+            marker.onclick = function() {
+                currentYear.value = year;
+                updateYearOnMap();
+                highlightCurrentYear();
+                updateYearDisplay(year);
+            };
+            timeline.appendChild(marker);
+        }
+    }
+
+    function updateYearOnMap() {
+        const filter = ['<=', ['get', 'InOpBy'], currentYear.value];
+        map.setFilter('railway-data', filter);
+    }
+
+    function highlightCurrentYear() {
+        document.querySelectorAll('.year-marker').forEach(marker => {
+            marker.classList.remove('active');
+        });
+        const activeMarker = document.getElementById('year-' + currentYear.value);
+        activeMarker.classList.add('active');
+    }
+
+    function updateYearDisplay(year) {
+        const yearDisplay = document.getElementById('year-display');
+        yearDisplay.textContent = year;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+#timeline {
+    position: absolute;
+    bottom: 30px;
+    left: 10%;
+    transform: translateX(-10%);
+    height: 80%;
+    width: 30px;
+    background-color: #cfcfcf9a;
+    z-index: 100;
+}
+
+.year-marker {
+    position: relative;
+    width: 30px;
+    height: 1px;
+    background-color: #116298;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+#year-display {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #1327bdcd;
+    font-size: 30px;
+    font-family: 'Arial', sans-serif;
+    z-index: 100;
+}
+
+.mapboxgl-popup {
+    opacity: 0;
+    transition: opacity 100ms ease-in-out;
+}
+
+.mapboxgl-popup-content {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+    border-top-color: rgba(0, 0, 0, 0.8);
+}
