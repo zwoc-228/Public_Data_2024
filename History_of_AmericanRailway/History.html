@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>The Historical Evolution of Railroads in the United States 1830-1920</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+        }
+
+        #map { 
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            width: 100%; 
+        }
+
+        #timeline {
+            position: absolute;
+            bottom: 30px;
+            left: 5%;
+            transform: translateX(-10%);
+            height: 80%;
+            width: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: #ffffff;
+            z-index: 100;
+            overflow: hidden;
+            transition: width 0.5s ease; 
+        }
+
+        #timeline:hover {
+            width: 40px; 
+        }
+
+        .year-marker {
+            position: relative;
+            width: 40px;
+            height: 5px;
+            background-color: #00324feb;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #timeline:not(:hover) .year-marker {
+            display: none;
+        }
+
+        .year-marker:hover, 
+        .year-marker.active {
+            background-color: #ff0000cd;
+        }
+
+        #year-display {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffffcd;
+            font-size: 24px;
+            font-family: 'Arial', sans-serif;
+            z-index: 100;
+        }
+
+        #year-tooltip {
+            position: absolute;
+            left: 100%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border-radius: 5px;
+            font-family: 'Arial', sans-serif;
+            font-size: 20px;
+            color: #333;
+            z-index: 100;
+            display: none;
+        }
+
+        #title {
+            position: absolute; 
+            top: 50px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            text-align: center; 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="timeline"></div>
+    <div id="year-display">1830</div>
+    <div id="year-tooltip"></div>
+    <div id="title">The Historical Evolution of Railroads in the United States 1830-1920</div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiendvYyIsImEiOiJjbHU3c24wZXIwM21hMmpwNnhmMTJkOTZvIn0.RW_k2Lezha_QbHUHQQ-ZBg';
+        const startYear = 1830;
+        const endYear = 1920;
+        let currentYear = { value: startYear };
+        let dataFeatures = [];
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/zwoc/clvbrkxib042s01pkcqgy9pxj',
+            center: [-88, 38],
+            zoom: 5,
+            scrollZoom: false
+        });
+
+        map.on('load', function() {
+            fetch('1.json')
+                .then(response => response.json())
+                .then(data => {
+                    dataFeatures = data.features;
+                    map.addSource('railways', {
+                        type: 'geojson',
+                        data: {
+                            type: 'FeatureCollection',
+                            features: []
+                        }
+                    });
+
+                    map.addLayer({
+                        'id': 'railway-data',
+                        'type': 'line',
+                        'source': 'railways',
+                        'layout': {
+                            'line-cap': 'round',
+                            'line-join': 'round'
+                        },
+                        'paint': {
+                        'line-color': '#6bcdd8',
+                        'line-width': 1,
+                        'line-opacity': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            5, 1,
+                            10, 2
+                        ]
+                    }
+                    });
+
+                    setupTimeline();
+                    updateYearDisplay(currentYear.value);
+                    updateYearOnMap();
+                });
+        });
+
+        window.addEventListener("wheel", function(e) {
+            e.preventDefault();
+            let yearChange = e.deltaY > 0 ? 1 : -1;
+            let newYear = currentYear.value + yearChange;
+            if (newYear >= startYear && newYear <= endYear) {
+                currentYear.value = newYear;
+                updateYearOnMap();
+                highlightCurrentYear();
+                updateYearDisplay(currentYear.value);
+            }
+        });
+
+        map.on('mousemove', 'railway-data', function(e) {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', 'railway-data', function(e) {
+            map.getCanvas().style.cursor = '';
+        });
+
+        function updateYearOnMap() {
+            const cumulativeData = dataFeatures.filter(feature => feature.properties.InOpBy <= currentYear.value);
+            const source = map.getSource('railways');
+            if (source) {
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: cumulativeData
+                });
+            }
+
+            const newFeatures = cumulativeData.filter(feature => feature.properties.InOpBy === currentYear.value);
+            highlightNewFeatures(newFeatures);
+
+            let zoomLevel;
+            let center;
+            if (currentYear.value <= 1870) {
+                zoomLevel = 5;
+                center = [-88, 38];
+            } else {
+                zoomLevel = 4.5;
+                center = [-98, 40];
+            }
+            map.easeTo({
+                center: center,
+                zoom: zoomLevel,
+                duration: 1500
+            });
+        }
+
+        function highlightNewFeatures(newFeatures) {
+            const highlightedSource = map.getSource('highlighted-railways');
+            if (!highlightedSource) {
+                map.addSource('highlighted-railways', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: []
+                    }
+                });
+
+                map.addLayer({
+                    'id': 'highlighted-railway-data',
+                    'type': 'line',
+                    'source': 'highlighted-railways',
+                    'layout': {
+                        'line-cap': 'round',
+                        'line-join': 'round'
+                    },
+                    'paint': {
+                        'line-color': 'white',
+                        'line-width': 4,
+                        'line-opacity': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            5, 1,
+                            10, 2
+                        ]
+                    }
+                });
+            }
+
+            highlightedSource.setData({
+                type: 'FeatureCollection',
+                features: newFeatures
+            });
+        }
+
+        function setupTimeline() {
+            const timeline = document.getElementById('timeline');
+            for (let year = startYear; year <= endYear; year++) {
+                const marker = document.createElement('div');
+                marker.className = 'year-marker';
+                marker.id = 'year-' + year;
+                marker.onmouseover = function() {
+                    showYearTooltip(year, this);
+                };
+                marker.onmouseout = function() {
+                    hideYearTooltip();
+                };
+                marker.onclick = function() {
+                    currentYear.value = year;
+                    updateYearOnMap();
+                    highlightCurrentYear();
+                    updateYearDisplay(year);
+                };
+                timeline.appendChild(marker);
+            }
+        }
+
+        function showYearTooltip(year, marker) {
+            const tooltip = document.getElementById('year-tooltip');
+            tooltip.textContent = year;
+            const rect = marker.getBoundingClientRect();
+            tooltip.style.top = `${rect.top + window.pageYOffset}px`;
+            tooltip.style.left = `${rect.right + window.pageXOffset + 30}px`;
+            tooltip.style.display = 'block';
+        }
+
+        function hideYearTooltip() {
+            const tooltip = document.getElementById('year-tooltip');
+            tooltip.style.display = 'none';
+        }
+
+        function highlightCurrentYear() {
+            document.querySelectorAll('.year-marker').forEach(marker => {
+                marker.classList.remove('active');
+                if (parseInt(marker.id.split('-')[1]) === currentYear.value) {
+                    marker.classList.add('active');
+                }
+            });
+        }
+
+        function updateYearDisplay(year) {
+            const yearDisplay = document.getElementById('year-display');
+            yearDisplay.textContent = year;
+        }
+    </script>
+</body>
+</html>

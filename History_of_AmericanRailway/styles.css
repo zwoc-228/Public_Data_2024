@@ -1,0 +1,25 @@
+#timeline {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 20px;
+    background-color: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 1000;
+}
+
+.year-marker {
+    height: 100%;
+    flex-grow: 1;
+    background-color: #ccc;
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+
+.year-marker.active {
+    background-color: #ed6498;
+}
