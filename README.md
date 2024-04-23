@@ -16,4 +16,4 @@ https://zwoc-228.github.io/Public_Data_2024/module5_interactivity/index.html
 
 https://zwoc-228.github.io/Public_Data_2024/History_of_AmericanRailway_Beta/train_animation.html
 
-https://zwoc-228.github.io/Public_Data_2024/History_of_AmericanRailway_Beta/History_of_AmericanRailway
+https://zwoc-228.github.io/Public_Data_2024/History_of_AmericanRailway_Beta/History_of_AmericanRailway/History.html
